@@ -7,6 +7,7 @@ You must test your agent's strength against a set of agents with known
 relative strength using tournament.py and include the results in your report.
 """
 import random
+import math
 
 
 class Timeout(Exception):
@@ -38,7 +39,13 @@ def custom_score(game, player):
     """
 
     # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    return float(len(game.get_legal_moves(player)))
 
 
 class CustomPlayer:
@@ -79,10 +86,11 @@ class CustomPlayer:
         self.method = method
         self.time_left = None
         self.TIMER_THRESHOLD = timeout
+        self.count = 0
 
     def get_move(self, game, legal_moves, time_left):
         """Search for the best move from the available legal moves and return a
-        result before the time limit expires.
+        result before the time limit expires. -- use self.search_depth here!
 
         This function must perform iterative deepening if self.iterative=True,
         and it must use the search method (minimax or alphabeta) corresponding
@@ -103,6 +111,7 @@ class CustomPlayer:
         legal_moves : list<(int, int)>
             A list containing legal moves. Moves are encoded as tuples of pairs
             of ints defining the next (row, col) for the agent to occupy.
+            HERE ONLY USED FOR ITERATIVE DEEPENING
 
         time_left : callable
             A function that returns the number of milliseconds left in the
@@ -129,11 +138,19 @@ class CustomPlayer:
             # here in order to avoid timeout. The try/except block will
             # automatically catch the exception raised by the search method
             # when the timer gets close to expiring
-            pass
-
+            if self.iterative:
+             #   score, move = self.method(game, self.search_depth, self.maxi_player(self.search_depth()))
+                pass
+            else:
+                if self.method == 'minimax': _, move = self.minimax(game, self.search_depth) 
+                else: pass
+                #return move
+                #pass
+            return move
         except Timeout:
             # Handle any actions required at timeout, if necessary
-            pass
+            return (-1, -1)
+            # OR BEST ANSWER SO FAR
 
         # Return the best move from the last completed search iteration
         raise NotImplementedError
@@ -154,7 +171,7 @@ class CustomPlayer:
         maximizing_player : bool
             Flag indicating whether the current search depth corresponds to a
             maximizing layer (True) or a minimizing layer (False)
-
+:
         Returns
         -------
         float
@@ -168,12 +185,58 @@ class CustomPlayer:
             (1) You MUST use the `self.score()` method for board evaluation
                 to pass the project unit tests; you cannot call any other
                 evaluation function directly.
-        """
+        """        
+
+
+        # TODO: finish this function!
+
+        #        return self.min_value(game, depth-1)
+        maxi = True if self.search_depth == depth else False
+        reco_moves = []
+        
+        legal_moves = game.get_legal_moves()
+        
+        if maximizing_player:
+            if not legal_moves or depth == 0:
+                return self.score(game, game.active_player)# , game.get_player_location(game.active_player)
+            v = -float('inf')
+            for move in legal_moves:
+               # print('max move: ', move)
+                score = self.minimax(game.forecast_move(move), depth-1, not maximizing_player)
+                v = max(v, score)
+                if maxi: reco_moves.append((score, move))
+            if maxi:
+                return max(reco_moves)
+            else:
+                return v
+        else:
+            if not legal_moves or depth == 0:
+                return self.score(game, game.inactive_player)#, game.get_player_location(game.inactive_player)
+            v = float('inf')
+            for move in legal_moves:
+                #print('\t', 'min move: ', move)
+                v = min(v, self.minimax(game.forecast_move(move), depth-1, not maximizing_player))
+            return v   
+                
+                
         if self.time_left() < self.TIMER_THRESHOLD:
             raise Timeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+    
+    def min_value(self, game, depth):
+        pass
+            
+    
+    def max_value(self, game, depth):
+        pass
+    
+    def cutoff_test(self, state, depth):
+        """ treat current dpeth as terminal node depth and apply Eval(s) """
+        return True if state.move_count == depth else False
+        #self.score(state, state.active_layer())
+    
+    def maxi_player(self, depth):
+        return True if depth == 0 or depth % 2 == 0 else False
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True):
         """Implement minimax search with alpha-beta pruning as described in the
