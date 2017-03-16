@@ -280,4 +280,37 @@ class CustomPlayer:
             raise Timeout()
 
         # TODO: finish this function!
-        raise NotImplementedError
+        maxi = True if self.search_depth == depth else False
+        reco_moves = []
+        
+        legal_moves = game.get_legal_moves()
+        
+        if maximizing_player:
+            if not legal_moves or depth == 0:
+                return self.score(game, game.active_player)# , game.get_player_location(game.active_player)
+            v = -float('inf')
+            for move in legal_moves:
+               # print('max move: ', move)
+                score = self.alphabeta(game.forecast_move(move), depth-1, alpha, beta, not maximizing_player)
+                v = max(v, score)
+                if v >= beta: return v
+                alpha = max(alpha, v)
+                if maxi: reco_moves.append((score, move))
+            if maxi:
+                return max(reco_moves)
+            else:
+                return v
+        else:
+            if not legal_moves or depth == 0:
+                return self.score(game, game.inactive_player)#, game.get_player_location(game.inactive_player)
+            v = float('inf')
+            for move in legal_moves:
+                #print('\t', 'min move: ', move)
+                v = min(v, self.alphabeta(game.forecast_move(move), depth-1, alpha, beta, not maximizing_player))
+                if v <= alpha: return v
+                beta = min(beta, v)
+            return v   
+                
+                
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise Timeout()
